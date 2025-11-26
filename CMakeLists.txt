@@ -7,8 +7,8 @@ include(./boost-test.cmake)
 
 add_executable(
 	cyctius 
-	"src/test.cpp"
-	#"src/main_coro.cpp"
+	#"src/test.cpp"
+	"src/main_coro.cpp"
 
 	"src/core/async/http_server.h" 
 	"src/core/async/http_session.h" 
@@ -46,6 +46,8 @@ add_executable(
 
 	"src/hello_route.h"
 	"src/hello_route.cpp"
+
+	"src/core/exception_handler/exception_handler.h"
 )
 
 target_link_libraries(cyctius ${Boost_LIBRARIES})
