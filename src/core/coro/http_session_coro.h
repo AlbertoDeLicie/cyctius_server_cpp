@@ -15,11 +15,12 @@ public:
 	HttpSessionCoro& operator=(const HttpSessionCoro&) = delete;
 
 	void start();
+	void close();
 
 private:
-	boost::asio::awaitable<void> read();
-	boost::asio::awaitable<void> close();
-	boost::asio::awaitable<void> handle_request(beast::http::request<beast::http::dynamic_body> req);
+	boost::asio::awaitable<void> async_read();
+	boost::asio::awaitable<void> async_close();
+	boost::asio::awaitable<void> async_handle_request(beast::http::request<beast::http::dynamic_body> req);
 
 	boost::asio::io_context& m_io_context;
 

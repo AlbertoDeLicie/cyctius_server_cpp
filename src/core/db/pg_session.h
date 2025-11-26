@@ -40,14 +40,84 @@ namespace db {
             }
             catch (const pqxx::sql_error& e) {
                 *ec = boost::system::errc::make_error_code(boost::system::errc::bad_message);
+                spdlog::error("pg_session exception: {}", e.what());
                 co_return std::nullopt;
             }
             catch (const std::exception& e) {
                 *ec = boost::system::errc::make_error_code(boost::system::errc::operation_canceled);
+                spdlog::error("pg_session exception: {}", e.what());
                 co_return std::nullopt;
             }
 
             co_return results;
+        }
+
+        template<typename T>
+        boost::asio::awaitable<std::optional<T>> async_execute_single_res(const std::string& query, std::shared_ptr<boost::system::error_code> ec) {
+            ec->clear();
+
+            try {
+                co_await boost::asio::post(m_strand, boost::asio::use_awaitable);
+
+                if (*ec) {
+                    co_return std::nullopt;
+                }
+
+                if (!is_open())
+                    co_return std::nullopt;
+
+                pqxx::work txn(m_connection.value());
+                pqxx::result r = txn.exec(query);
+                txn.commit();
+
+                if (r.size() > 1) {
+                    *ec = boost::system::errc::make_error_code(boost::system::errc::bad_message);
+                    co_return std::nullopt;
+                }
+
+                co_return PgRowMapper<T>::map(r.front());
+            }
+            catch (const pqxx::sql_error& e) {
+                *ec = boost::system::errc::make_error_code(boost::system::errc::bad_message);
+                spdlog::error("pg_session exception: {}", e.what());
+                co_return std::nullopt;
+            }
+            catch (const std::exception& e) {
+                *ec = boost::system::errc::make_error_code(boost::system::errc::operation_canceled);
+                spdlog::error("pg_session exception: {}", e.what());
+                co_return std::nullopt;
+            }
+        }
+
+        boost::asio::awaitable<void> async_execute_no_res(const std::string& query, std::shared_ptr<boost::system::error_code> ec) {
+            ec->clear();
+
+            try {
+                co_await boost::asio::post(m_strand, boost::asio::use_awaitable);
+
+                if (*ec) {
+                    co_return;
+                }
+
+                if (!is_open())
+                    co_return;
+
+                pqxx::work txn(m_connection.value());
+                pqxx::result r = txn.exec(query);
+                txn.commit();
+            }
+            catch (const pqxx::sql_error& e) {
+                *ec = boost::system::errc::make_error_code(boost::system::errc::bad_message);
+                spdlog::error("pg_session exception: {}", e.what());
+                co_return;
+            }
+            catch (const std::exception& e) {
+                *ec = boost::system::errc::make_error_code(boost::system::errc::operation_canceled);
+                spdlog::error("pg_session exception: {}", e.what());
+                co_return;
+            }
+
+            co_return;
         }
 
         void close();
@@ -56,7 +126,7 @@ namespace db {
 
     private:
         void assign_socket();
-        boost::asio::awaitable<void> wait();
+        boost::asio::awaitable<void> async_wait();
         boost::asio::awaitable<bool> connect();
         boost::asio::awaitable<void> close_coro();
 

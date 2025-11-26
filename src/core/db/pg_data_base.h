@@ -1,4 +1,5 @@
 #pragma once
+
 #include "pg_session.h"
 #include <boost/asio.hpp>
 #include <spdlog/spdlog.h>
@@ -89,6 +90,8 @@ namespace db {
 		template<typename ResultEntity>
 		boost::asio::awaitable<std::optional<std::vector<ResultEntity>>> async_execute(const std::string& query, std::shared_ptr<boost::system::error_code> ec) {
 			try {
+				co_await boost::asio::post(m_strand, boost::asio::use_awaitable);
+
 				if (query.empty() || m_sessions.empty())
 					co_return std::nullopt;
 
@@ -101,13 +104,59 @@ namespace db {
 				auto session = session_weak.lock();
 
 				// Работаем через strand
-				co_await boost::asio::post(m_strand, boost::asio::use_awaitable);
-
 				co_return co_await session->async_execute<ResultEntity>(query, ec);
 			}
 			catch (std::exception& ex) {
 				spdlog::info("pg_data_base error when call execute query: {}", ex.what());
 				co_return std::nullopt;
+			}
+		}
+
+		template<typename ResultEntity>
+		boost::asio::awaitable<std::optional<ResultEntity>> async_execute_single_res(const std::string& query, std::shared_ptr<boost::system::error_code> ec) {
+			try {
+				co_await boost::asio::post(m_strand, boost::asio::use_awaitable);
+
+				if (query.empty() || m_sessions.empty())
+					co_return std::nullopt;
+
+				// Выбор сессии политикой класса
+				auto session_weak = m_policy.select(m_sessions);
+
+				if (session_weak.expired())
+					co_return std::nullopt;
+
+				auto session = session_weak.lock();
+				co_return co_await session->async_execute_single_res<ResultEntity>(query, ec);
+			}
+			catch (std::exception& ex) {
+				spdlog::info("pg_data_base error when call execute query: {}", ex.what());
+				co_return std::nullopt;
+			}
+		}
+
+		boost::asio::awaitable<void> async_execute_no_res(const std::string& query, std::shared_ptr<boost::system::error_code> ec) {
+			try {
+				co_await boost::asio::post(m_strand, boost::asio::use_awaitable);
+
+				if (query.empty() || m_sessions.empty())
+					co_return;
+
+				// Выбор сессии политикой класса
+				auto session_weak = m_policy.select(m_sessions);
+
+				if (session_weak.expired())
+					co_return;
+
+				auto session = session_weak.lock();
+
+				co_await session->async_execute_no_res(query, ec);
+
+				co_return;
+			}
+			catch (std::exception& ex) {
+				spdlog::info("pg_data_base error when call execute query: {}", ex.what());
+				co_return;
 			}
 		}
 

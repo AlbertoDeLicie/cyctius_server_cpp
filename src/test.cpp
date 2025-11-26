@@ -15,22 +15,47 @@ public:
 		std::string query = "SELECT id, name, age FROM users";
 		auto users = co_await db_conn_->async_execute<User>(query, ec);
 
-		//std::cout << users.value().front().name << std::endl;
+		if (!users)
+			co_return users;
+
+		for (const auto& user : *users) {
+			std::cout << user.name << "\t";
+		}
+
+		std::cout << std::endl;
 
 		if (ec) {
 			co_return std::nullopt;
 		}
+
 		co_return users;
+	}
+
+	boost::asio::awaitable<void> insert_user(std::shared_ptr<boost::system::error_code> ec) {
+		std::string query = "INSERT INTO users (id, name, age) VALUES (6, 'Egor', 23)";
+		co_await db_conn_->async_execute_no_res(query, ec);
+
+		std::cout << std::endl;
+
+		if (ec) {
+			co_return;
+		}
+
+		co_return;
 	}
 
 private:
 	std::shared_ptr<db::PgDataBase<db::RoundRobinPolicy>> db_conn_;
 };
 
-void request_handler(UserRepository& user_service, boost::asio::io_context& ioc) {
-
+void find_all_users(UserRepository& user_service, boost::asio::io_context& ioc) {
 	auto ec = std::make_shared<boost::system::error_code>();
 	boost::asio::co_spawn(ioc, user_service.find_all_users(ec), boost::asio::detached);
+}
+
+void insert_user(UserRepository& user_service, boost::asio::io_context& ioc) {
+	auto ec = std::make_shared<boost::system::error_code>();
+	boost::asio::co_spawn(ioc, user_service.insert_user(ec), boost::asio::detached);
 }
 
 int main() {
@@ -44,7 +69,7 @@ int main() {
 		"password",
 		5433,
 		"cyctius_session",
-		20
+		2
 	};
 
 	auto database = std::make_shared<db::PgDataBase<db::RoundRobinPolicy>>(ioc, con_info);
@@ -61,40 +86,19 @@ int main() {
 			}));
 	}
 
-	std::random_device rd; // Инициализация генератора
-	std::mt19937 mt(rd()); // Mersenne Twister engine
-	std::uniform_int_distribution<int> dist(8, 20); // Распределение от 8 до 20 
-
-	std::vector<std::thread> db_threads;
-	const int num_threads = 100;
-
-	bool stop = false;
-
-	for (int i = 0; i < num_threads; ++i) {
-		threads.emplace_back(
-			[&]() {
-				while (!stop) {
-					request_handler(user_repo, ioc);
-					// Генерация случайной задержки для текущего потока в миллисекундах
-					std::chrono::milliseconds delay(dist(mt));
-					std::this_thread::sleep_for(delay);
-				}
-			}
-		);
-	}
-
 	std::string command;
 	while (true) {
 		std::cout << "> ";        // приглашение к вводу
 		std::getline(std::cin, command);
 	
 		if (command == "rpt") {
-			request_handler(user_repo, ioc);
+			find_all_users(user_repo, ioc);
+		}
+		else if (command == "ins") {
+			insert_user(user_repo, ioc);
 		}
 		else if (command == "cls") {
-			//database->terminate();
-
-			stop = true;
+			database->terminate();
 		}
 		else if (command == "str") {
 			database->connect_all();
@@ -108,12 +112,6 @@ int main() {
 	ioc.stop();
 
 	for (auto& t : threads) {
-		if (t.joinable()) {
-			t.join();
-		}
-	}
-
-	for (auto& t : db_threads) {
 		if (t.joinable()) {
 			t.join();
 		}

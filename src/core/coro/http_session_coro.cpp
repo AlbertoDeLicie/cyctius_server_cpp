@@ -16,13 +16,24 @@ void HttpSessionCoro::start() {
 	boost::asio::co_spawn(
 		m_io_context,
 		[self]() -> boost::asio::awaitable<void> {
-			co_await self->read();
+			co_await self->async_read();
 		},
 		boost::asio::detached
 	);
 }
 
-boost::asio::awaitable<void> HttpSessionCoro::read() {
+void HttpSessionCoro::close() {
+	auto self = shared_from_this();
+	boost::asio::co_spawn(
+		m_io_context,
+		[self]() -> boost::asio::awaitable<void> {
+			co_await self->async_close();
+		},
+		boost::asio::detached
+	);
+}
+
+boost::asio::awaitable<void> HttpSessionCoro::async_read() {
 	try {
 		m_parser.emplace();
 		m_parser->body_limit(1024 * 1000 * 1000);
@@ -43,7 +54,7 @@ boost::asio::awaitable<void> HttpSessionCoro::read() {
 		auto self = shared_from_this();
 		boost::asio::co_spawn(
 			m_io_context,
-			handle_request(std::move(req)),
+			async_handle_request(std::move(req)),
 			boost::asio::detached
 		);
 	}
@@ -52,7 +63,7 @@ boost::asio::awaitable<void> HttpSessionCoro::read() {
 	}
 }
 
-boost::asio::awaitable<void> HttpSessionCoro::close() {
+boost::asio::awaitable<void> HttpSessionCoro::async_close() {
 	try {
 		if (m_socket.is_open()) {
 			auto ip_port = get_ip_port(m_socket);
@@ -74,7 +85,7 @@ boost::asio::awaitable<void> HttpSessionCoro::close() {
 	co_return;
 }
 
-boost::asio::awaitable<void> HttpSessionCoro::handle_request(beast::http::request<beast::http::dynamic_body> req) {
+boost::asio::awaitable<void> HttpSessionCoro::async_handle_request(beast::http::request<beast::http::dynamic_body> req) {
 	try {
 		auto self = shared_from_this();
 		auto response = co_await m_router->handle_request(std::move(req));
@@ -87,13 +98,13 @@ boost::asio::awaitable<void> HttpSessionCoro::handle_request(beast::http::reques
 			boost::asio::co_spawn(
 				m_io_context,
 				[self]() -> boost::asio::awaitable<void> {
-					co_await self->read();
+					co_await self->async_read();
 				},
 				boost::asio::detached
 			);
 		}
 		else {
-			co_await close();
+			co_await async_close();
 		}
 	}
 	catch (std::exception& e) {

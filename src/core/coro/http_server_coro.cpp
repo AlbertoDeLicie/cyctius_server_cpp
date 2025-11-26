@@ -10,14 +10,13 @@ HttpServerCoro::HttpServerCoro(unsigned short port, unsigned int thread_count) :
 	m_io_context(thread_count),
 	m_thread_count(thread_count),
 	m_acceptor(m_io_context, tcp::endpoint(tcp::v4(), port)),
-	m_workers_pool(thread_count),
 	m_router(std::make_shared<RouterCoro>(m_io_context))
 {
 }
 
 HttpServerCoro::~HttpServerCoro()
 {
-	m_workers_pool.join();
+	
 }
 
 void HttpServerCoro::run() {
@@ -54,9 +53,37 @@ boost::asio::awaitable<void> HttpServerCoro::accept() {
 
 			auto session = std::make_shared<HttpSessionCoro>(m_io_context, std::move(socket), m_router);
 			session->start();
+
+			m_sessions.emplace_back(session);
+
+			co_await clean_expired_sessions();
 		}
 	}
 	catch (const std::exception& e) {
 		spdlog::error("accept loop error: {}", e.what());
 	}
+}
+
+boost::asio::awaitable<void> HttpServerCoro::clean_expired_sessions()
+{
+	m_sessions.erase(std::remove_if(m_sessions.begin(), m_sessions.end(),
+		[](const std::weak_ptr<HttpSessionCoro>& s) { return s.expired(); }),
+		m_sessions.end());
+
+	co_return;
+}
+
+void HttpServerCoro::terminate_session(size_t i) const
+{
+	if (i >= m_sessions.size())
+		return;
+
+	auto session_weak = m_sessions[i];
+
+	if (session_weak.expired())
+		return;
+
+	auto session = session_weak.lock();
+
+	session->close();
 }

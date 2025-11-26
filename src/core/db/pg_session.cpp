@@ -23,7 +23,7 @@ void db::PgSession::start() {
 			bool connected = co_await self->connect();
 			if (connected) {
 				self->assign_socket();
-				co_await self->wait();
+				co_await self->async_wait();
 			} else {
 				co_return;
 			}
@@ -43,7 +43,7 @@ void db::PgSession::assign_socket()
 	m_socket.assign(boost::asio::ip::tcp::v4(), file_descriptor);
 }
 
-boost::asio::awaitable<void> db::PgSession::wait() {
+boost::asio::awaitable<void> db::PgSession::async_wait() {
 	try {
 		auto self = shared_from_this();
 
@@ -67,7 +67,7 @@ boost::asio::awaitable<void> db::PgSession::wait() {
 		boost::asio::co_spawn(
 			m_strand,
 			[self]() -> boost::asio::awaitable<void> {
-				co_await self->wait();
+				co_await self->async_wait();
 			},
 			boost::asio::detached
 		);

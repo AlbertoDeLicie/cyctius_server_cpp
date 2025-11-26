@@ -2,9 +2,9 @@
 #include <pqxx/pqxx>
 
 struct User {
-    int id;
-    std::string name;
-    int age;
+	int id;
+	std::string name;
+	int age;
 };
 
 template<typename T>
@@ -14,11 +14,11 @@ struct PgRowMapper {
 
 template<>
 struct PgRowMapper<User> {
-    static User map(const pqxx::row& row) {
-        User user;
-        user.id = row["id"].as<int>();
-        user.name = row["name"].as<std::string>();
-        user.age = row["age"].as<int>();
-        return user;
-    }
+	static User map(const pqxx::row& row) {
+		return {
+			row["id"].as<int>(),
+			row["name"].as<std::string>(),
+			row["age"].as<int>()
+		};
+	}
 };
