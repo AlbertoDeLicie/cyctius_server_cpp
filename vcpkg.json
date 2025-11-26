@@ -1,0 +1,13 @@
+{
+  "name": "first-test",
+  "version-string": "0.0.1",
+    "dependencies": [
+        "boost-test",
+        "boost-asio",
+        "boost-beast",
+        "boost-url",
+        "nlohmann-json",
+        "spdlog",
+        "libpqxx"
+    ]
+}
