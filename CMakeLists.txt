@@ -2,13 +2,14 @@ cmake_minimum_required (VERSION 3.6)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_FLAGS "/bigobj ${CMAKE_CXX_FLAGS}")
 
 include(./boost-test.cmake)
 
 add_executable(
 	cyctius 
-	"src/test.cpp"
-	#"src/main_coro.cpp"
+	#"src/test.cpp"
+	"src/main_coro.cpp"
 
 	"src/core/async/http_server.h" 
 	"src/core/async/http_session.h" 
@@ -23,6 +24,10 @@ add_executable(
 	"src/core/coro/http_session_coro.h"
 	"src/core/coro/router_coro.h" 
 	"src/core/coro/router_coro.cpp"
+	"src/core/coro/websocket_session.h" 
+	"src/core/coro/websocket_session.cpp" 
+	"src/core/coro/detect_session.h"
+	"src/core/coro/detect_session.cpp"
 
 	"src/core/db/pg_session.h" 
 	"src/core/db/pg_mapper.h" 

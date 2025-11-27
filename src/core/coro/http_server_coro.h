@@ -7,7 +7,7 @@
 #include <vector>
 #include "router_coro.h"
 
-class HttpSessionCoro;
+//class HttpSessionCoro;
 
 class HttpServerCoro {
 public:
@@ -30,5 +30,5 @@ private:
 	std::shared_ptr<RouterCoro> m_router;
 
 	// лишь ссылаемся на сессию но не продлеваем время ее жизни, потому-что сессия может быть закрыта извне
-	std::vector<std::weak_ptr<HttpSessionCoro>> m_sessions;
+	//std::vector<std::weak_ptr<HttpSessionCoro>> m_sessions;
 };

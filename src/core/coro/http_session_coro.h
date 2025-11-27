@@ -10,12 +10,26 @@ namespace beast = boost::beast;
 class HttpSessionCoro : public std::enable_shared_from_this<HttpSessionCoro> {
 
 public:
-	HttpSessionCoro(boost::asio::io_context& io, boost::asio::ip::tcp::socket socket, std::shared_ptr<RouterCoro> router);
+	explicit HttpSessionCoro(boost::asio::io_context& io, boost::asio::ip::tcp::socket socket, std::shared_ptr<RouterCoro> router) noexcept;
+
+	// Конструктор для использования в DetectSession
+	// parser не муваем потому-что у него удален конструктор перемещения. к тому-же значение из него уже прочитано
+	explicit HttpSessionCoro(
+		boost::asio::io_context& io, 
+		boost::asio::ip::tcp::socket socket, 
+		std::shared_ptr<RouterCoro> router,
+		beast::flat_buffer buffer
+	) noexcept;
+
+	~HttpSessionCoro();
+
 	HttpSessionCoro(const HttpSessionCoro&) = delete;
 	HttpSessionCoro& operator=(const HttpSessionCoro&) = delete;
 
 	void start();
 	void close();
+
+	void handle_request(beast::http::request<beast::http::dynamic_body> req);
 
 private:
 	boost::asio::awaitable<void> async_read();

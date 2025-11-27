@@ -4,11 +4,29 @@
 
 using namespace boost::asio;
 
-HttpSessionCoro::HttpSessionCoro(boost::asio::io_context& io, ip::tcp::socket socket, std::shared_ptr<RouterCoro> router) :
+HttpSessionCoro::HttpSessionCoro(boost::asio::io_context& io, ip::tcp::socket socket, std::shared_ptr<RouterCoro> router) noexcept :
 	m_io_context(io),
 	m_socket(std::move(socket)),
 	m_router(std::move(router))
 {
+}
+
+HttpSessionCoro::HttpSessionCoro(
+	boost::asio::io_context& io, 
+	boost::asio::ip::tcp::socket socket, 
+	std::shared_ptr<RouterCoro> router, 
+	beast::flat_buffer buffer
+) noexcept :
+	m_io_context(io),
+	m_socket(std::move(socket)),
+	m_router(std::move(router)),
+	m_buffer(std::move(buffer))
+{
+}
+
+HttpSessionCoro::~HttpSessionCoro()
+{
+	spdlog::debug("Http session destructed");
 }
 
 void HttpSessionCoro::start() {
@@ -17,6 +35,17 @@ void HttpSessionCoro::start() {
 		m_io_context,
 		[self]() -> boost::asio::awaitable<void> {
 			co_await self->async_read();
+		},
+		boost::asio::detached
+	);
+}
+
+void HttpSessionCoro::handle_request(beast::http::request<beast::http::dynamic_body> req) {
+	auto self = shared_from_this();
+	boost::asio::co_spawn(
+		m_io_context,
+		[self, req_ = std::move(req)]() -> boost::asio::awaitable<void> {
+			co_await self->async_handle_request(req_);
 		},
 		boost::asio::detached
 	);
@@ -51,12 +80,7 @@ boost::asio::awaitable<void> HttpSessionCoro::async_read() {
 		auto req = m_parser->release();
 
 		// запускаем обработку запроса
-		auto self = shared_from_this();
-		boost::asio::co_spawn(
-			m_io_context,
-			async_handle_request(std::move(req)),
-			boost::asio::detached
-		);
+		co_await async_handle_request(std::move(req));
 	}
 	catch (std::exception& ex) {
 		co_return;
@@ -87,7 +111,6 @@ boost::asio::awaitable<void> HttpSessionCoro::async_close() {
 
 boost::asio::awaitable<void> HttpSessionCoro::async_handle_request(beast::http::request<beast::http::dynamic_body> req) {
 	try {
-		auto self = shared_from_this();
 		auto response = co_await m_router->handle_request(std::move(req));
 
 		bool keep_alive = req.keep_alive();
@@ -95,13 +118,7 @@ boost::asio::awaitable<void> HttpSessionCoro::async_handle_request(beast::http::
 		co_await beast::http::async_write(m_socket, *response, boost::asio::use_awaitable);
 
 		if (keep_alive && m_socket.is_open()) {
-			boost::asio::co_spawn(
-				m_io_context,
-				[self]() -> boost::asio::awaitable<void> {
-					co_await self->async_read();
-				},
-				boost::asio::detached
-			);
+			co_await async_read();
 		}
 		else {
 			co_await async_close();

@@ -1,8 +1,8 @@
 #include "http_server_coro.h"
-#include "http_session_coro.h"
 
 #include <spdlog/spdlog.h>
 #include "../common/socket_utils.h"
+#include "detect_session.h"
 
 using namespace boost::asio::ip;
 
@@ -51,12 +51,12 @@ boost::asio::awaitable<void> HttpServerCoro::accept() {
 			auto ip_port = get_ip_port(socket);
 			spdlog::info("connection accepted: {}:{}", ip_port.first, ip_port.second);
 
-			auto session = std::make_shared<HttpSessionCoro>(m_io_context, std::move(socket), m_router);
+			auto session = std::make_shared<DetectSession>(m_io_context, std::move(socket), m_router);
 			session->start();
 
-			m_sessions.emplace_back(session);
+			//m_sessions.emplace_back(session);
 
-			co_await clean_expired_sessions();
+			//co_await clean_expired_sessions();
 		}
 	}
 	catch (const std::exception& e) {
@@ -64,26 +64,26 @@ boost::asio::awaitable<void> HttpServerCoro::accept() {
 	}
 }
 
-boost::asio::awaitable<void> HttpServerCoro::clean_expired_sessions()
-{
-	m_sessions.erase(std::remove_if(m_sessions.begin(), m_sessions.end(),
-		[](const std::weak_ptr<HttpSessionCoro>& s) { return s.expired(); }),
-		m_sessions.end());
-
-	co_return;
-}
-
-void HttpServerCoro::terminate_session(size_t i) const
-{
-	if (i >= m_sessions.size())
-		return;
-
-	auto session_weak = m_sessions[i];
-
-	if (session_weak.expired())
-		return;
-
-	auto session = session_weak.lock();
-
-	session->close();
-}
+//boost::asio::awaitable<void> HttpServerCoro::clean_expired_sessions()
+//{
+//	m_sessions.erase(std::remove_if(m_sessions.begin(), m_sessions.end(),
+//		[](const std::weak_ptr<HttpSessionCoro>& s) { return s.expired(); }),
+//		m_sessions.end());
+//
+//	co_return;
+//}
+//
+//void HttpServerCoro::terminate_session(size_t i) const
+//{
+//	if (i >= m_sessions.size())
+//		return;
+//
+//	auto session_weak = m_sessions[i];
+//
+//	if (session_weak.expired())
+//		return;
+//
+//	auto session = session_weak.lock();
+//
+//	session->close();
+//}

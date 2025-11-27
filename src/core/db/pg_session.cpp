@@ -1,7 +1,7 @@
 #include "pg_session.h"
 #include "../common/socket_utils.h"
 
-db::PgSession::PgSession(boost::asio::io_context& ioc, std::string conn_str):
+db::PgSession::PgSession(boost::asio::io_context& ioc, std::string conn_str) noexcept :
 	m_io_context(ioc),
 	m_connection_str(std::move(conn_str)),
 	m_socket(ioc),
@@ -20,7 +20,7 @@ void db::PgSession::start() {
 	boost::asio::co_spawn(
 		m_strand,
 		[self]() -> boost::asio::awaitable<void> {
-			bool connected = co_await self->connect();
+			bool connected = co_await self->async_connect();
 			if (connected) {
 				self->assign_socket();
 				co_await self->async_wait();
@@ -45,9 +45,7 @@ void db::PgSession::assign_socket()
 
 boost::asio::awaitable<void> db::PgSession::async_wait() {
 	try {
-		auto self = shared_from_this();
-
-		if (!self->is_open()) {
+		if (!is_open()) {
 			spdlog::info("pg session is closed");
 			co_return;
 		}
@@ -60,25 +58,19 @@ boost::asio::awaitable<void> db::PgSession::async_wait() {
 
 		if (ec) {
 			spdlog::info("pg session was closed");
-			close_coro();
+			async_close();
 			co_return;
 		}
 
-		boost::asio::co_spawn(
-			m_strand,
-			[self]() -> boost::asio::awaitable<void> {
-				co_await self->async_wait();
-			},
-			boost::asio::detached
-		);
+		co_await async_wait();
 	}
 	catch(std::exception& ex) {
 		spdlog::error("pg session was bad close: {}", ex.what());
-		close_coro();
+		async_close();
 	}
 }
 
-boost::asio::awaitable<bool> db::PgSession::connect()
+boost::asio::awaitable<bool> db::PgSession::async_connect()
 {
 	try {
 		if (m_connection && m_connection->is_open()) {
@@ -110,14 +102,14 @@ void db::PgSession::close()
 	boost::asio::co_spawn(
 		m_strand,
 		[self]() -> boost::asio::awaitable<void> {
-			co_await self->close_coro();
+			co_await self->async_close();
 			co_return;
 		},
 		boost::asio::detached
 	);
 }
 
-boost::asio::awaitable<void> db::PgSession::close_coro()
+boost::asio::awaitable<void> db::PgSession::async_close()
 {
 	try {
 		auto self = shared_from_this();

@@ -12,7 +12,10 @@ namespace db {
 
     class PgSession : public std::enable_shared_from_this<PgSession> {
     public:
-        PgSession(boost::asio::io_context& ioc, std::string conn_str);
+        explicit PgSession(boost::asio::io_context& ioc, std::string conn_str) noexcept;
+        PgSession(const PgSession& other) = delete;
+        PgSession& operator=(const PgSession& other) = delete;
+
         ~PgSession();
 
         template<typename T>
@@ -127,8 +130,8 @@ namespace db {
     private:
         void assign_socket();
         boost::asio::awaitable<void> async_wait();
-        boost::asio::awaitable<bool> connect();
-        boost::asio::awaitable<void> close_coro();
+        boost::asio::awaitable<bool> async_connect();
+        boost::asio::awaitable<void> async_close();
 
         boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
 
