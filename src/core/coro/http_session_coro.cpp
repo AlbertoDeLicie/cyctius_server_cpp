@@ -4,7 +4,7 @@
 
 using namespace boost::asio;
 
-HttpSessionCoro::HttpSessionCoro(boost::asio::io_context& io, ip::tcp::socket socket, std::shared_ptr<RouterCoro> router) noexcept :
+HttpSessionCoro::HttpSessionCoro(boost::asio::io_context& io, ip::tcp::socket socket, std::shared_ptr<HttpRouterCoro> router) noexcept :
 	m_io_context(io),
 	m_socket(std::move(socket)),
 	m_router(std::move(router))
@@ -14,7 +14,7 @@ HttpSessionCoro::HttpSessionCoro(boost::asio::io_context& io, ip::tcp::socket so
 HttpSessionCoro::HttpSessionCoro(
 	boost::asio::io_context& io, 
 	boost::asio::ip::tcp::socket socket, 
-	std::shared_ptr<RouterCoro> router, 
+	std::shared_ptr<HttpRouterCoro> router, 
 	beast::flat_buffer buffer
 ) noexcept :
 	m_io_context(io),

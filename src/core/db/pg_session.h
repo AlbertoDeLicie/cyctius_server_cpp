@@ -38,7 +38,7 @@ namespace db {
                 txn.commit();
 
                 for (const auto& row : r) {
-                    results.push_back(PgRowMapper<T>::map(row));
+                    results.push_back(db::PgRowMapper<T>::map(row));
                 }
             }
             catch (const pqxx::sql_error& e) {
@@ -78,7 +78,7 @@ namespace db {
                     co_return std::nullopt;
                 }
 
-                co_return PgRowMapper<T>::map(r.front());
+                co_return db::PgRowMapper<T>::map(r.front());
             }
             catch (const pqxx::sql_error& e) {
                 *ec = boost::system::errc::make_error_code(boost::system::errc::bad_message);

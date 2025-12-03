@@ -1,10 +1,10 @@
 #include <boost/beast.hpp>
 #include <boost/url.hpp>
 #include <algorithm>
-#include "router.h"
+#include "http_router.h"
 #include <spdlog/spdlog.h>
 
-std::shared_ptr<RawResponse> Router::handle_request(const RawRequest& request) const noexcept
+std::shared_ptr<RawResponse> HttpRouter::handle_request(const RawRequest& request) const noexcept
 {
 	try {
 		boost::urls::url_view url(request.target());
@@ -36,15 +36,15 @@ std::shared_ptr<RawResponse> Router::handle_request(const RawRequest& request) c
 	}
 }
 
-const Route& Router::get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept
+const HttpRoute& HttpRouter::get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept
 {
-	auto iter = std::find_if(m_routes.cbegin(), m_routes.cend(), [&](const Route& r1) {
+	auto iter = std::find_if(m_routes.cbegin(), m_routes.cend(), [&](const HttpRoute& r1) {
 		return r1.path == path && r1.method == verb;
 		});
 
 	if (iter == m_routes.end()) {
 		ok = false;
-		return Route();
+		return HttpRoute();
 	}
 
 	ok = true;

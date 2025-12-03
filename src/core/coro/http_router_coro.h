@@ -8,11 +8,11 @@
 #include "../common/http_request.h"
 #include "../common/route.h"
 
-class RouterCoro {
+class HttpRouterCoro {
 public:
-	RouterCoro(boost::asio::io_context& io) noexcept;
-	RouterCoro(const RouterCoro&) = delete;
-	RouterCoro& operator=(const RouterCoro&) = delete;
+	HttpRouterCoro(boost::asio::io_context& io) noexcept;
+	HttpRouterCoro(const HttpRouterCoro&) = delete;
+	HttpRouterCoro& operator=(const HttpRouterCoro&) = delete;
 
 	boost::asio::awaitable<std::shared_ptr<RawResponse>> handle_request(const RawRequest& request) const noexcept;
 
@@ -29,8 +29,8 @@ public:
 	}
 
 private:
-	const RouteCoro& get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept;
-	std::vector<RouteCoro> m_routes;
+	const HttpRouteCoro& get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept;
+	std::vector<HttpRouteCoro> m_routes;
 
 	boost::asio::io_context& m_io_context;
 };

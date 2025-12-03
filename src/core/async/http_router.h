@@ -7,7 +7,7 @@
 #include "../common/http_request.h"
 #include "../common/route.h"
 
-class Router {
+class HttpRouter {
 public:
 	std::shared_ptr<RawResponse> handle_request(const RawRequest& request) const noexcept;
 
@@ -24,6 +24,6 @@ public:
 	}
 
 private:
-	const Route& get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept;
-	std::vector<Route> m_routes;
+	const HttpRoute& get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept;
+	std::vector<HttpRoute> m_routes;
 };

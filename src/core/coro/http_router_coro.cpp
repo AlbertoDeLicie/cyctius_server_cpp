@@ -1,12 +1,12 @@
-#include "router_coro.h"
+#include "http_router_coro.h"
 
-RouterCoro::RouterCoro(boost::asio::io_context& io) noexcept :
+HttpRouterCoro::HttpRouterCoro(boost::asio::io_context& io) noexcept :
 	m_io_context(io)
 {
 
 }
 
-boost::asio::awaitable<std::shared_ptr<RawResponse>> RouterCoro::handle_request(const RawRequest& request) const noexcept {
+boost::asio::awaitable<std::shared_ptr<RawResponse>> HttpRouterCoro::handle_request(const RawRequest& request) const noexcept {
 	try {
 		boost::urls::url_view url(request.target());
 
@@ -37,14 +37,14 @@ boost::asio::awaitable<std::shared_ptr<RawResponse>> RouterCoro::handle_request(
 	}
 }
 
-const RouteCoro& RouterCoro::get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept {
-	auto iter = std::find_if(m_routes.cbegin(), m_routes.cend(), [&](const RouteCoro& r1) {
+const HttpRouteCoro& HttpRouterCoro::get_route_handler(boost::beast::http::verb verb, std::string path, bool& ok) const noexcept {
+	auto iter = std::find_if(m_routes.cbegin(), m_routes.cend(), [&](const HttpRouteCoro& r1) {
 		return r1.path == path && r1.method == verb;
 		});
 
 	if (iter == m_routes.end()) {
 		ok = false;
-		return RouteCoro();
+		return HttpRouteCoro();
 	}
 
 	ok = true;

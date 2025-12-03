@@ -3,10 +3,16 @@
 #include "websocket_session.h"
 #include <spdlog/spdlog.h>
 
-DetectSession::DetectSession(boost::asio::io_context& io, boost::asio::ip::tcp::socket socket, std::shared_ptr<RouterCoro> router) noexcept :
+DetectSession::DetectSession(
+	boost::asio::io_context& io, 
+	boost::asio::ip::tcp::socket socket, 
+	std::shared_ptr<HttpRouterCoro> router,
+	std::shared_ptr<WebsocketRouter> ws_router
+) noexcept :
 	m_io_context(io),
 	m_socket(std::move(socket)),
-	m_router(router)
+	m_router(std::move(router)),
+	m_ws_router(std::move(ws_router))
 {
 }
 
@@ -53,7 +59,7 @@ boost::asio::awaitable<void> DetectSession::async_start_specific_session(beast::
 		co_return;
 	}
 	else if (upgrade_header == "websocket") {
-		auto websocket_session = std::make_shared<WebsocketSession>(m_io_context, std::move(m_socket), m_router, std::move(m_buffer));
+		auto websocket_session = std::make_shared<WebsocketSession>(m_io_context, std::move(m_socket), m_ws_router, std::move(m_buffer));
 		websocket_session->start(std::move(req));
 		co_return;
 	}

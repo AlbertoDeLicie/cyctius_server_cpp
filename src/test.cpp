@@ -1,6 +1,7 @@
 #include <iostream>
 #include <boost/asio.hpp>
 #include "core/db/pg_data_base.h"
+#include "user.h"
 #include <string>
 #include <random>
 #include <numeric>

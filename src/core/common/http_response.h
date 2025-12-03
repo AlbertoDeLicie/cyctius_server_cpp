@@ -24,7 +24,7 @@ public:
 
 	std::shared_ptr<RawResponse> build() const
 	{
-		using Serializer = ResponseTraits<BodyType>;
+		using Serializer = HttpResponseTraits<BodyType>;
 
 		auto response = std::make_shared<RawResponse>(m_status_code, m_version);
 

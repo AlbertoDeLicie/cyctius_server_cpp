@@ -6,7 +6,7 @@
 
 #include <spdlog/spdlog.h>
 
-HttpSession::HttpSession(net::ip::tcp::socket socket, boost::asio::thread_pool& pool, std::shared_ptr<Router> router) :
+HttpSession::HttpSession(net::ip::tcp::socket socket, boost::asio::thread_pool& pool, std::shared_ptr<HttpRouter> router) :
 	m_socket(std::move(socket)),
 	m_router(std::move(router)),
 	m_strand(m_socket.get_executor()),

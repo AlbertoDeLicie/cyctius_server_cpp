@@ -9,11 +9,11 @@
 #include <vector>
 
 template<typename ContentType>
-struct ContentTraits {
+struct HttpContentTraits {
     using BodyType = std::string; // safe default
 
     // non-template parse Ч всегда одна и та же сигнатура
-    static BodyType parse(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
+    static BodyType deserialize(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
         return boost::beast::buffers_to_string(req.body().data());
     }
 
@@ -27,10 +27,10 @@ struct IntContent { static constexpr const char* name = "text/int"; };
 struct XWWWFormUrlencoded { static constexpr const char* name = "application/x-www-form-urlencoded"; };
 
 template<>
-struct ContentTraits<JsonContent> {
+struct HttpContentTraits<JsonContent> {
     using BodyType = nlohmann::json;
 
-    static BodyType parse(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
+    static BodyType deserialize(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
         if (req.body().size() == 0) return BodyType{};
         try {
             return nlohmann::json::parse(boost::beast::buffers_to_string(req.body().data()));
@@ -44,10 +44,10 @@ struct ContentTraits<JsonContent> {
 };
 
 template<>
-struct ContentTraits<TextContent> {
+struct HttpContentTraits<TextContent> {
     using BodyType = std::string;
 
-    static BodyType parse(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
+    static BodyType deserialize(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
         return boost::beast::buffers_to_string(req.body().data());
     }
 
@@ -55,10 +55,10 @@ struct ContentTraits<TextContent> {
 };
 
 template<>
-struct ContentTraits<BinaryContent> {
+struct HttpContentTraits<BinaryContent> {
     using BodyType = std::vector<uint8_t>;
 
-    static BodyType parse(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
+    static BodyType deserialize(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
         std::vector<uint8_t> out;
 
         const auto& buffers = req.body().data();
@@ -79,10 +79,10 @@ struct ContentTraits<BinaryContent> {
 };
 
 template<>
-struct ContentTraits<XWWWFormUrlencoded> {
+struct HttpContentTraits<XWWWFormUrlencoded> {
     using BodyType = std::unordered_multimap<std::string, std::string>;
 
-    static BodyType parse(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
+    static BodyType deserialize(const boost::beast::http::request<boost::beast::http::dynamic_body>& req) {
         BodyType out;
 
         std::string body_string = boost::beast::buffers_to_string(req.body().data());

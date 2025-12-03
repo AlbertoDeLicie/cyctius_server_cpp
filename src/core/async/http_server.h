@@ -4,7 +4,7 @@
 #include <memory>
 #include <thread>
 #include <vector>
-#include "router.h"
+#include "http_router.h"
 
 namespace net = boost::asio;
 namespace beast = boost::beast;
@@ -14,7 +14,7 @@ class HttpServer {
 public:
 	HttpServer(unsigned short port, unsigned int thread_count);
 	~HttpServer();
-	void set_router(std::shared_ptr<Router> router);
+	void set_router(std::shared_ptr<HttpRouter> router);
 
 	void run();
 private:
@@ -24,5 +24,5 @@ private:
 	unsigned int m_thread_count;
 	net::io_context m_io_context;
 	tcp::acceptor m_acceptor;
-	std::shared_ptr<Router> m_router;
+	std::shared_ptr<HttpRouter> m_router;
 };

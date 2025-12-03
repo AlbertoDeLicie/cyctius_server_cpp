@@ -16,7 +16,7 @@ HttpServer::~HttpServer()
 	m_workers_pool.join();
 }
 
-void HttpServer::set_router(std::shared_ptr<Router> router)
+void HttpServer::set_router(std::shared_ptr<HttpRouter> router)
 {
 	m_router = router;
 }

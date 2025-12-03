@@ -10,7 +10,8 @@ HttpServerCoro::HttpServerCoro(unsigned short port, unsigned int thread_count) :
 	m_io_context(thread_count),
 	m_thread_count(thread_count),
 	m_acceptor(m_io_context, tcp::endpoint(tcp::v4(), port)),
-	m_router(std::make_shared<RouterCoro>(m_io_context))
+	m_http_router(std::make_shared<HttpRouterCoro>(m_io_context)),
+	m_websocket_router(std::make_shared<WebsocketRouter>(m_io_context))
 {
 }
 
@@ -20,7 +21,7 @@ HttpServerCoro::~HttpServerCoro()
 }
 
 void HttpServerCoro::run() {
-	if (!m_router)
+	if (!m_http_router)
 		throw std::invalid_argument("router is null!");
 
 	boost::asio::co_spawn(m_io_context, accept(), boost::asio::detached);
@@ -38,9 +39,18 @@ void HttpServerCoro::run() {
 		t.join();
 }
 
-std::shared_ptr<RouterCoro> HttpServerCoro::get_router()
+boost::asio::io_context& HttpServerCoro::context() {
+	return m_io_context;
+}
+
+std::shared_ptr<HttpRouterCoro> HttpServerCoro::get_http_router()
 {
-	return m_router;
+	return m_http_router;
+}
+
+std::shared_ptr<WebsocketRouter> HttpServerCoro::get_websocket_router()
+{
+	return m_websocket_router;
 }
 
 boost::asio::awaitable<void> HttpServerCoro::accept() {
@@ -51,7 +61,7 @@ boost::asio::awaitable<void> HttpServerCoro::accept() {
 			auto ip_port = get_ip_port(socket);
 			spdlog::info("connection accepted: {}:{}", ip_port.first, ip_port.second);
 
-			auto session = std::make_shared<DetectSession>(m_io_context, std::move(socket), m_router);
+			auto session = std::make_shared<DetectSession>(m_io_context, std::move(socket), m_http_router, m_websocket_router);
 			session->start();
 
 			//m_sessions.emplace_back(session);

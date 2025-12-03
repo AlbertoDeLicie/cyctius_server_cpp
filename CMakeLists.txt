@@ -15,19 +15,21 @@ add_executable(
 	"src/core/async/http_session.h" 
 	"src/core/async/http_session.cpp" 
 	"src/core/async/http_server.cpp"
-	"src/core/async/router.h"
-	"src/core/async/router.cpp" 
+	"src/core/async/http_router.h"
+	"src/core/async/http_router.cpp" 
 
 	"src/core/coro/http_server_coro.h" 
 	"src/core/coro/http_server_coro.cpp" 
 	"src/core/coro/http_session_coro.cpp"
 	"src/core/coro/http_session_coro.h"
-	"src/core/coro/router_coro.h" 
-	"src/core/coro/router_coro.cpp"
+	"src/core/coro/http_router_coro.h" 
+	"src/core/coro/http_router_coro.cpp"
 	"src/core/coro/websocket_session.h" 
 	"src/core/coro/websocket_session.cpp" 
 	"src/core/coro/detect_session.h"
 	"src/core/coro/detect_session.cpp"
+	"src/core/coro/websocket_router.h" 
+	"src/core/transform/mapper.h" 
 
 	"src/core/db/pg_session.h" 
 	"src/core/db/pg_mapper.h" 
@@ -39,7 +41,11 @@ add_executable(
 	"src/core/common/http_response.h" 
 	"src/core/common/content_traits.h" 
 	"src/core/common/http_response.cpp"
-	"src/core/common/route.h" 
+	"src/core/common/route.h"
+	"src/core/common/websocket_message.h"
+	"src/core/common/websocket_route.h"
+	"src/core/coro/websocket_router.cpp" 
+	"src/core/common/websocket_content_traits.h" 
 
 	"src/core/common/logger.cpp"
 	"src/core/common/logger.h"
@@ -51,7 +57,8 @@ add_executable(
 
 	"src/hello_route.h"
 	"src/hello_route.cpp"
-)
+	"src/user.h"
+ "src/message.h")
 
 target_link_libraries(cyctius ${Boost_LIBRARIES})
 target_link_libraries(cyctius nlohmann_json::nlohmann_json)

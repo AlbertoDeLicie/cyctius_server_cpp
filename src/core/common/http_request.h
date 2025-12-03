@@ -18,14 +18,14 @@ struct BasicHttpRequest {
 
 template<typename ContentTypeTag>
 struct HttpRequest : public BasicHttpRequest<ContentTypeTag> {
-    using BodyType = typename ContentTraits<ContentTypeTag>::BodyType;
+    using BodyType = typename HttpContentTraits<ContentTypeTag>::BodyType;
     BodyType body;
 };
 
 template<typename ContentTypeTag>
 inline std::shared_ptr<HttpRequest<ContentTypeTag>> from_request(const boost::beast::http::request<boost::beast::http::dynamic_body>& req)
 {
-    using Traits = ContentTraits<ContentTypeTag>;
+    using Traits = HttpContentTraits<ContentTypeTag>;
     using BodyType = typename Traits::BodyType;
 
     auto httpRequest = std::make_shared<HttpRequest<ContentTypeTag>>();
@@ -49,7 +49,7 @@ inline std::shared_ptr<HttpRequest<ContentTypeTag>> from_request(const boost::be
         httpRequest->query_params.emplace(std::string(p.key), std::string(p.value));
     }
 
-    httpRequest->body = Traits::parse(req);
+    httpRequest->body = Traits::deserialize(req);
 
     return httpRequest;
 }

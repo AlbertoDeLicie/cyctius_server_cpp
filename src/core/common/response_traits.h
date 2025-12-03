@@ -3,19 +3,26 @@
 #include <string>
 #include <boost/beast/core/error.hpp>
 #include <nlohmann/json.hpp>
+#include "../transform/mapper.h"
 
 template<typename ContentType>
-struct ResponseTraits {
-	using BodyType = std::string;
+struct HttpResponseTraits {
+	using BodyType = ContentType;
 
 	static std::string serialize(const BodyType& r, boost::beast::error_code& code) {
-		return r;
+		try {
+			return JsonMapper<ContentType>::map(r).dump();
+		}
+		catch (std::exception& ex) {
+			code = boost::asio::error::invalid_argument;
+			return "";
+		}
 	}
 
 };
 
 template<>
-struct ResponseTraits<nlohmann::json> {
+struct HttpResponseTraits<nlohmann::json> {
 	using BodyType = nlohmann::json;
 
 	static std::string serialize(const BodyType& r, boost::beast::error_code& code) {
@@ -23,13 +30,14 @@ struct ResponseTraits<nlohmann::json> {
 			return nlohmann::to_string(r);
 		}
 		catch (...) {
-			code = boost::beast::http::error::unexpected_body;
+			code = boost::asio::error::invalid_argument;
+			return {};
 		}
 	}
 };
 
 template<>
-struct ResponseTraits<int> {
+struct HttpResponseTraits<int> {
 	using BodyType = int;
 
 	static std::string serialize(const BodyType& r, boost::beast::error_code& code) {
@@ -40,7 +48,7 @@ struct ResponseTraits<int> {
 struct EmptyResponseBody {};
 
 template<>
-struct ResponseTraits<EmptyResponseBody> {
+struct HttpResponseTraits<EmptyResponseBody> {
 	using BodyType = EmptyResponseBody;
 
 	static std::string serialize(const BodyType&, boost::beast::error_code& code) {
